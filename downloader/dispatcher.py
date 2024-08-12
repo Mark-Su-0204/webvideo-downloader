@@ -20,6 +20,8 @@ class TaskDispatcher:
 
         self.downloader = WebDownloader(self.saveTempFile)
         self.task = None
+        
+        self.manifest_dir = '../manifests'
 
         tools.mkdirIfNotExists(self.tempFilePath)
         tools.mkdirIfNotExists(self.videoFilePath)
@@ -115,9 +117,21 @@ class TaskDispatcher:
         return targetFileName
 
 
-    def download(self, url, fileName, data = None):
+    def categorize_and_save_manifest(self, app, fileName, res, m3u8_text):
+        if not os.path.exists(self.manifest_dir):
+            os.mkdir(self.manifest_dir)
+        app_dir = os.path.join(self.manifest_dir, app)
+        if not os.path.exists(app_dir):
+            os.mkdir(app_dir)
+        with open(os.path.join(app_dir, fileName + '_' + res + '.m3u8'), 'w') as f:
+            f.write(m3u8_text)
+
+
+    def download(self, url, fileName, res, data = None):
         fileName = tools.escapeFileName(fileName)
-        videoType, headers, audioUrls, videoUrls, subtitles = api.parseSingleUrl(url, data)
+        videoType, headers, audioUrls, videoUrls, subtitles, m3u8_text, app = api.parseSingleUrl(url, data)
+
+        self.categorize_and_save_manifest(app, fileName, res, m3u8_text)
 
         if audioUrls:
             print('匹配到%d段音频，%d段视频，开始下载' % (len(audioUrls), len(videoUrls)))
@@ -160,11 +174,12 @@ class TaskDispatcher:
         try:
             if task['type'] == 'link':
                 url, fileName = task.get('linksurl') or task['url'], task['fileName']
+                res = task.get('res')
                 data = task.get('data')
                 if task.get('pRange'):
                     self.downloadMultiParts(url, fileName, task['pRange'])
                 else:
-                    self.download(url, fileName, data)
+                    self.download(url, fileName, res, data)
             elif task['type'] == 'stream':
                 self.handleStream(**task)
         except Exception as e:

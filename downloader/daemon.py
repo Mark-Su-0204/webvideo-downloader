@@ -23,7 +23,8 @@ class DownloadServer(WebServer):
         try:
             body = client.rfile.read(int(client.headers['Content-Length']))
             task = json.loads(body.decode('utf-8'))
-            self.printWithoutData(task)
+            # self.printWithoutData(task)
+            self.print_with_data(task)
             self.taskQueue.put(task)
             tools.normalResponse(client, "success")
         except Exception as e:
@@ -66,6 +67,10 @@ class DownloadServer(WebServer):
         copyTask = {key: task[key] for key in task}
         if copyTask.get('data'):
             copyTask['data'] = '...'
+        print('\nReceive: %s\n' % tools.stringify(copyTask))
+
+    def print_with_data(self, task):
+        copyTask = {key: task[key] for key in task}
         print('\nReceive: %s\n' % tools.stringify(copyTask))
 
 

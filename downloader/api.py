@@ -23,7 +23,7 @@ def getHeaders(url):
 
 def parseHlsUrl(url, headers = {}):
     content = tools.getText(url, headers)
-    return tools.filterHlsUrls(content, url)
+    return content, tools.filterHlsUrls(content, url)
 
 # iqiyi: 解析mpd文件
 def parseIqiyiMpd(content, headers = {}):
@@ -92,7 +92,7 @@ def parseIqiyiUrl(url, realData, headers = {}):
         srts = defaultSrts + list(filter(lambda x: not x.get('_selected'), program['stl']))
         basePath = data['data']['dstl']
         subtitles = [ (srt.get('_name', 'default'), basePath + srt['srt']) for srt in srts ]
-    return videoType, audioUrls, videoUrls, subtitles
+    return videoType, audioUrls, videoUrls, subtitles, content
 
 
 # 解析油猴链接，返回解析后的url和所需请求头
@@ -101,30 +101,35 @@ def parseSingleUrl(url, realData = None):
 
     isBilibili = url.find('bili') > 0 or url.count('.m4s') == 2
     isIqiyi = any(map(lambda x: url.find(x) > 0, ['iqiyi.com', 'iq.com']))
+    isTencent = url.find('qq.com') > 0
 
     videoType = ''
     headers = getHeaders(url)
     audioUrls = []
     videoUrls = []
     subtitles = []
+    m3u8_text = None
 
     if url.find('.m3u8') > 0:
         videoType = 'hls'
+        app = 'Tencent'
         if len(urls) == 1:
-            videoUrls = parseHlsUrl(url, headers)
+            m3u8_text, videoUrls = parseHlsUrl(url, headers)
         else:
-            videoUrls = parseHlsUrl(urls[0], headers)
+            m3u8_text, videoUrls = parseHlsUrl(urls[0], headers)
             subtitles = [ (unquote(urls[i*2+1]), urls[i*2+2]) for i in range(len(urls)//2) ]
     elif isBilibili and url.find('.m4s') > 0:
         videoType = 'dash'
+        app = 'Bilibili'
         audioUrls, videoUrls = urls[:1], urls[1:]
     elif isIqiyi:
-        videoType, audioUrls, videoUrls, subtitles = parseIqiyiUrl(url, realData, headers)
+        app = 'Iqiyi'
+        videoType, audioUrls, videoUrls, subtitles, m3u8_text = parseIqiyiUrl(url, realData, headers)
     else:
         videoType = 'partial'
         videoUrls = urls
 
-    return videoType, headers, audioUrls, videoUrls, subtitles
+    return videoType, headers, audioUrls, videoUrls, subtitles, m3u8_text, app
 
 
 
