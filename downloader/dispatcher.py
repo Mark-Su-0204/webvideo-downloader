@@ -118,6 +118,8 @@ class TaskDispatcher:
 
 
     def categorize_and_save_manifest(self, app, fileName, res, m3u8_text):
+        if m3u8_text == None:
+            return
         if not os.path.exists(self.manifest_dir):
             os.mkdir(self.manifest_dir)
         app_dir = os.path.join(self.manifest_dir, app)
