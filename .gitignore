@@ -7,3 +7,6 @@ logs/
 *.DS_Store
 /requests
 /manifests
+/m4s
+/har
+
